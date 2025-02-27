@@ -66,9 +66,11 @@ class LinearRegressor:
         """
         # Replace this code with the code you did in the previous laboratory session
 
+        # Aplicamos la formula para calcular beta con numpy ((X^T X)^{-1} X^T y)
+        beta = np.linalg.inv(X.T.dot(X)).dot(X.T.dot(y))
+        self.intercept = beta[0]
+        self.coefficients = beta[1:]
         # Store the intercept and the coefficients of the model
-        self.intercept = None
-        self.coefficients = None
 
     def fit_gradient_descent(self, X, y, learning_rate=0.01, iterations=1000):
         """
@@ -91,19 +93,16 @@ class LinearRegressor:
         )  # Small random numbers
         self.intercept = np.random.rand() * 0.01
 
-        # Implement gradient descent (TODO)
         for epoch in range(iterations):
-            predictions = None
+            predictions = np.hstack([self.intercept, self.coefficients]).dot(X.T)
             error = predictions - y
 
-            # TODO: Write the gradient values and the updates for the paramenters
-            gradient = None
-            self.intercept -= None
-            self.coefficients -= None
+            gradient = (2 / m) * (X.T).dot(error) 
+            self.intercept -= learning_rate * gradient[0]
+            self.coefficients -= learning_rate * gradient[1:]
 
-            # TODO: Calculate and print the loss every 10 epochs
             if epoch % 1000 == 0:
-                mse = None
+                mse = np.mean(error ** 2)
                 print(f"Epoch {epoch}: MSE = {mse}")
 
     def predict(self, X):
@@ -121,12 +120,16 @@ class LinearRegressor:
             ValueError: If the model is not yet fitted.
         """
 
-        # Paste your code from last week
-
         if self.coefficients is None or self.intercept is None:
             raise ValueError("Model is not yet fitted")
 
-        return None
+        if np.ndim(X) == 1:
+            # TODO: Predict when X is only one variable
+            predictions = self.intercept + self.coefficients[0] * X
+        else:
+            predictions = self.intercept + X.dot(self.coefficients)
+        return predictions
+
 
 
 def evaluate_regression(y_true, y_pred):
@@ -142,18 +145,19 @@ def evaluate_regression(y_true, y_pred):
     """
 
     # R^2 Score
-    # TODO
-    r_squared = None
+    # TODO: Calculate R^2
+    r_squared = 1 - np.sum((y_true - y_pred) ** 2) / np.sum((y_true - np.mean(y_true)) ** 2)
 
     # Root Mean Squared Error
-    # TODO
-    rmse = None
+    # TODO: Calculate RMSE
+    rmse = np.sqrt(np.mean((y_true - y_pred) ** 2))
 
     # Mean Absolute Error
-    # TODO
-    mae = None
+    # TODO: Calculate MAE
+    mae = np.mean(np.abs(y_true - y_pred))
 
     return {"R2": r_squared, "RMSE": rmse, "MAE": mae}
+
 
 
 def one_hot_encode(X, categorical_indices, drop_first=False):
@@ -170,21 +174,23 @@ def one_hot_encode(X, categorical_indices, drop_first=False):
         np.ndarray: Transformed array with one-hot encoded columns.
     """
     X_transformed = X.copy()
-    for index in sorted(categorical_indices, reverse=True):
-        # TODO: Extract the categorical column
-        categorical_column = None
+    
+    for index in sorted(categorical_indices, reverse=True): 
+        columna = X_transformed[:, index]
+        unicos = np.unique(columna)
+                
+        one_hot = []
+        for valor in columna:
+            fila = []
+            for val_unico in unicos:
+                fila.append(int(valor == val_unico))
+            one_hot.append(fila)
+        one_hot = np.array(one_hot)
 
-        # TODO: Find the unique categories (works with strings)
-        unique_values = None
-
-        # TODO: Create a one-hot encoded matrix (np.array) for the current categorical column
-        one_hot = None
-
-        # Optionally drop the first level of one-hot encoding
         if drop_first:
-            one_hot = one_hot[:, 1:]
+            one_hot = one_hot[:, 1:]  
 
-        # TODO: Delete the original categorical column from X_transformed and insert new one-hot encoded columns
-        X_transformed = None
-
+        X_transformed = np.delete(X_transformed, index, axis=1)  
+        X_transformed = np.hstack((X_transformed[:, :index], one_hot, X_transformed[:, index:]))
+    
     return X_transformed
